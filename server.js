@@ -28,6 +28,11 @@ const MIME = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const hashPw = (pw) => crypto.createHash("sha256").update(pw).digest("hex");
 
+function log(level, ...args) {
+  const ts = new Date().toISOString();
+  console[level](`[${ts}] [${level.toUpperCase()}]`, ...args);
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -54,6 +59,7 @@ function json(res, status, data) {
 let pool = null;
 
 (async () => {
+  log("info", `Connecting to MySQL at ${DB_CONFIG.host}/${DB_CONFIG.database} as '${DB_CONFIG.user}'`);
   try {
     pool = mysql.createPool(DB_CONFIG);
     await pool.execute(`
@@ -65,13 +71,23 @@ let pool = null;
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    log("info", "Table 'users' ready.");
+
     // Migrate existing tables that used 'username' instead of name/email
-    for (const sql of [
+    const migrations = [
       "ALTER TABLE users ADD COLUMN name  VARCHAR(50)  NOT NULL DEFAULT '' AFTER id",
       "ALTER TABLE users ADD COLUMN email VARCHAR(100) UNIQUE AFTER name",
-    ]) {
-      try { await pool.execute(sql); } catch { /* column already exists */ }
+      "ALTER TABLE users DROP COLUMN username",
+    ];
+    for (const sql of migrations) {
+      try {
+        await pool.execute(sql);
+        log("info", `Migration applied: ${sql}`);
+      } catch (err) {
+        log("info", `Migration skipped (${err.message.split(";")[0]}): ${sql}`);
+      }
     }
+
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS attempts (
         id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -86,9 +102,11 @@ let pool = null;
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
-    console.log("  Database connected and tables ready.");
+    log("info", "Table 'attempts' ready.");
+    log("info", "Database connected and all tables ready.");
   } catch (err) {
-    console.warn(`  DB unavailable (${err.message}). API will return 503.`);
+    log("error", `DB setup failed: ${err.message}`);
+    log("warn", "API endpoints will return 503 until DB is available.");
     pool = null;
   }
 })();
@@ -96,11 +114,20 @@ let pool = null;
 // ── API Handlers ──────────────────────────────────────────────────────────────
 async function apiRegister(req, res) {
   const { name, email, password } = await readBody(req);
-  if (!name?.trim() || !email?.trim() || !password)
+  log("info", `POST /api/register – email=${email?.trim().toLowerCase()}`);
+
+  if (!name?.trim() || !email?.trim() || !password) {
+    log("warn", "Register rejected: missing name, email or password.");
     return json(res, 400, { error: "Name, email address and password are required." });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    log("warn", `Register rejected: invalid email format – "${email.trim()}"`);
     return json(res, 400, { error: "Please enter a valid email address." });
-  if (!pool) return json(res, 503, { error: "Database unavailable." });
+  }
+  if (!pool) {
+    log("error", "Register failed: database pool is null.");
+    return json(res, 503, { error: "Database unavailable." });
+  }
 
   try {
     await pool.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [
@@ -112,73 +139,89 @@ async function apiRegister(req, res) {
       "SELECT id, name, email FROM users WHERE email = ?",
       [email.trim().toLowerCase()],
     );
+    log("info", `Register success: userId=${rows[0].id} email=${rows[0].email}`);
     json(res, 201, { userId: rows[0].id, name: rows[0].name, email: rows[0].email });
   } catch (err) {
-    if (err.code === "ER_DUP_ENTRY")
+    if (err.code === "ER_DUP_ENTRY") {
+      log("warn", `Register rejected: duplicate email – ${email.trim().toLowerCase()}`);
       return json(res, 409, { error: "An account with that email already exists." });
+    }
+    log("error", `Register DB error [${err.code}]: ${err.message}`);
     json(res, 500, { error: "Server error." });
   }
 }
 
 async function apiLogin(req, res) {
   const { email, password } = await readBody(req);
-  if (!email?.trim() || !password)
+  log("info", `POST /api/login – email=${email?.trim().toLowerCase()}`);
+
+  if (!email?.trim() || !password) {
+    log("warn", "Login rejected: missing email or password.");
     return json(res, 400, { error: "Email address and password are required." });
-  if (!pool) return json(res, 503, { error: "Database unavailable." });
+  }
+  if (!pool) {
+    log("error", "Login failed: database pool is null.");
+    return json(res, 503, { error: "Database unavailable." });
+  }
 
   try {
     const [rows] = await pool.execute(
       "SELECT id, name, email FROM users WHERE email = ? AND password = ?",
       [email.trim().toLowerCase(), hashPw(password)],
     );
-    if (!rows[0])
+    if (!rows[0]) {
+      log("warn", `Login failed: no match for email=${email.trim().toLowerCase()}`);
       return json(res, 401, { error: "Invalid email or password." });
+    }
+    log("info", `Login success: userId=${rows[0].id} email=${rows[0].email}`);
     json(res, 200, { userId: rows[0].id, name: rows[0].name, email: rows[0].email });
-  } catch {
+  } catch (err) {
+    log("error", `Login DB error [${err.code}]: ${err.message}`);
     json(res, 500, { error: "Server error." });
   }
 }
 
 async function apiAttempt(req, res) {
-  const { userId, category, mode, score, total, timeTakenMs } =
-    await readBody(req);
-  if (
-    !userId ||
-    !category ||
-    !mode ||
-    score == null ||
-    !total ||
-    timeTakenMs == null
-  )
+  const { userId, category, mode, score, total, timeTakenMs } = await readBody(req);
+  log("info", `POST /api/attempt – userId=${userId} category=${category} score=${score}/${total}`);
+
+  if (!userId || !category || !mode || score == null || !total || timeTakenMs == null) {
+    log("warn", "Attempt rejected: missing required fields.");
     return json(res, 400, { error: "Missing required fields." });
-  if (!pool) return json(res, 503, { error: "Database unavailable." });
+  }
+  if (!pool) {
+    log("error", "Attempt failed: database pool is null.");
+    return json(res, 503, { error: "Database unavailable." });
+  }
 
   try {
     await pool.execute(
       `INSERT INTO attempts (user_id, category, mode, score, total, percentage, time_taken_ms)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        category,
-        mode,
-        score,
-        total,
-        Math.round((score / total) * 100),
-        timeTakenMs,
-      ],
+      [userId, category, mode, score, total, Math.round((score / total) * 100), timeTakenMs],
     );
+    log("info", `Attempt saved: userId=${userId} score=${score}/${total}`);
     json(res, 201, { success: true });
-  } catch {
+  } catch (err) {
+    log("error", `Attempt DB error [${err.code}]: ${err.message}`);
     json(res, 500, { error: "Server error." });
   }
 }
 
 async function apiHistory(req, res) {
-  const url = new URL(req.url, "http://localhost");
+  const url    = new URL(req.url, "http://localhost");
   const userId = parseInt(url.searchParams.get("userId"), 10);
   const limit  = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "10", 10), 1), 50);
-  if (!userId) return json(res, 400, { error: "userId is required." });
-  if (!pool) return json(res, 503, { error: "Database unavailable." });
+  log("info", `GET /api/history – userId=${userId} limit=${limit}`);
+
+  if (!userId) {
+    log("warn", "History rejected: missing userId.");
+    return json(res, 400, { error: "userId is required." });
+  }
+  if (!pool) {
+    log("error", "History failed: database pool is null.");
+    return json(res, 503, { error: "Database unavailable." });
+  }
 
   try {
     const [rows] = await pool.execute(
@@ -190,8 +233,10 @@ async function apiHistory(req, res) {
        LIMIT  ${limit}`,
       [userId],
     );
+    log("info", `History returned ${rows.length} attempt(s) for userId=${userId}`);
     json(res, 200, { attempts: rows });
-  } catch {
+  } catch (err) {
+    log("error", `History DB error [${err.code}]: ${err.message}`);
     json(res, 500, { error: "Server error." });
   }
 }
@@ -213,7 +258,8 @@ http
     if (handler) {
       try {
         await handler(req, res);
-      } catch {
+      } catch (err) {
+        log("error", `Unhandled error in ${req.method} ${urlNoQuery}: ${err.message}`);
         json(res, 500, { error: "Unexpected server error." });
       }
       return;
@@ -222,27 +268,20 @@ http
     // Static file serving
     const safePath = path.normalize(urlNoQuery).replace(/^(\.\.[/\\])+/, "");
     const isRoot = safePath === "/" || safePath === path.sep;
-    const file = path.join(
-      __dirname,
-      "public",
-      isRoot ? "index.html" : safePath,
-    );
+    const file = path.join(__dirname, "public", isRoot ? "index.html" : safePath);
 
     fs.readFile(file, (err, data) => {
       if (err) {
+        log("warn", `Static file not found: ${file}`);
         res.writeHead(404, { "Content-Type": "text/plain" });
         res.end("404 – Not Found");
         return;
       }
-      res.writeHead(200, {
-        "Content-Type": MIME[path.extname(file)] || "text/plain",
-      });
+      res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "text/plain" });
       res.end(data);
     });
   })
   .listen(PORT, () => {
-    console.log("\n  KS2 Unit Conversion Quiz – Web Edition");
-    console.log("  ─────────────────────────────────────────");
-    console.log(`  Open in your browser: http://localhost:${PORT}`);
-    console.log("  Press Ctrl+C to stop.\n");
+    log("info", "KS2 Unit Conversion Quiz – Web Edition");
+    log("info", `Listening on http://localhost:${PORT}`);
   });
