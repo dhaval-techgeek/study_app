@@ -188,6 +188,11 @@
         <button id="rf-submit" class="rf-submit-btn">Submit →</button>
       </div>
 
+      <!-- Skip button (hidden after answering) -->
+      <div id="skip-wrap" class="skip-wrap" style="display:none">
+        <button id="skip-btn" class="skip-btn">⏭ Skip Question</button>
+      </div>
+
       <!-- Feedback (hidden until answer chosen) -->
       <div id="feedback-box" class="feedback-box" hidden>
         <p id="feedback-msg"  class="feedback-msg"></p>
@@ -231,6 +236,10 @@
         <div class="stat-box">
           <div id="stat-pct" class="stat-val">—</div>
           <div class="stat-lbl">Score %</div>
+        </div>
+        <div class="stat-box">
+          <div id="stat-skipped" class="stat-val">—</div>
+          <div class="stat-lbl">Skipped</div>
         </div>
       </div>
 

@@ -383,7 +383,7 @@ body {
 /* Stats row */
 .stats-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
@@ -679,6 +679,32 @@ body {
 }
 .rf-submit-btn:hover:not(:disabled) { background: var(--primary-d); transform: translateY(-2px); }
 .rf-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.rf-input.rf-skipped { border-color: var(--muted); background: #f9fafb; color: var(--muted); }
+
+/* ── Skip Button ─────────────────────────────────────────────────────────── */
+.skip-wrap {
+  text-align: center;
+  margin-top: 0.75rem;
+}
+.skip-btn {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.skip-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-bg);
+}
+.skip-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.feedback-msg.skipped { color: var(--muted); }
 
 /* ── Secondary Button ────────────────────────────────────────────────────── */
 .btn-secondary {
@@ -810,7 +836,7 @@ body {
   .card          { padding: 1.25rem; }
   .q-text        { font-size: 1.1rem; }
   .options-grid  { grid-template-columns: 1fr; }
-  .stats-row     { grid-template-columns: 1fr; }
+  .stats-row     { grid-template-columns: 1fr 1fr; }
   .ref-grid      { grid-template-columns: 1fr; }
   .ref-section:not(:first-child) { border-left: none; border-top: 2px solid var(--border); }
   .big-score     { font-size: 3rem; }

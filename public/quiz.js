@@ -557,6 +557,7 @@ const state = {
   questions: [],
   idx:      0,
   score:    0,
+  skipped:  0,
   answered: false,
   quizStart:   0,
   qStart:      0,
@@ -786,6 +787,7 @@ function startQuiz() {
   state.questions = buildSet(state.category, state.total, state.difficulty);
   state.idx     = 0;
   state.score   = 0;
+  state.skipped = 0;
   state.qTimes  = [];
   state.answered = false;
 
@@ -853,6 +855,12 @@ function showQuestion() {
     });
   }
 
+  // Skip button
+  $('skip-wrap').style.display = '';
+  const skipBtn = $('skip-btn');
+  skipBtn.disabled = false;
+  skipBtn.onclick  = () => handleSkip(q);
+
   // Hide feedback
   $('feedback-box').hidden = true;
 
@@ -864,6 +872,7 @@ function showQuestion() {
 function handleAnswer(chosen, q) {
   if (state.answered) return;
   state.answered = true;
+  $('skip-wrap').style.display = 'none';
 
   const elapsed   = Date.now() - state.qStart;
   state.qTimes.push(elapsed);
@@ -934,6 +943,7 @@ function handleAnswer(chosen, q) {
 function handleRapidFireAnswer(val, q) {
   if (state.answered) return;
   state.answered = true;
+  $('skip-wrap').style.display = 'none';
 
   const rfInput  = $('rf-input');
   const rfSubmit = $('rf-submit');
@@ -973,6 +983,65 @@ function handleRapidFireAnswer(val, q) {
     if (state.idx >= state.total) showResults();
     else showQuestion();
   }, isCorrect ? 0 : 2200);
+}
+
+// ─── Skip Handler ─────────────────────────────────────────────────────────────
+function handleSkip(q) {
+  if (state.answered) return;
+  state.answered = true;
+  state.skipped++;
+  $('skip-wrap').style.display = 'none';
+
+  const elapsed = Date.now() - state.qStart;
+  state.qTimes.push(elapsed);
+
+  const isRF = state.mode === 'rapidfire';
+
+  if (isRF) {
+    const rfInput  = $('rf-input');
+    const rfSubmit = $('rf-submit');
+    rfInput.disabled  = true;
+    rfSubmit.disabled = true;
+    rfInput.classList.add('rf-skipped');
+  } else {
+    const btns    = document.querySelectorAll('.option-btn');
+    const LETTERS = ['A', 'B', 'C', 'D'];
+    btns.forEach((btn, i) => {
+      btn.disabled = true;
+      if (LETTERS[i] === q.answer) btn.classList.add('correct');
+      else btn.classList.add('dimmed');
+    });
+  }
+
+  const feedbackMsg  = $('feedback-msg');
+  const feedbackHint = $('feedback-hint');
+  feedbackMsg.innerHTML = isRF
+    ? `⏭ Skipped! The answer was <strong>${q.correctDisplay}</strong>.`
+    : `⏭ Skipped! The answer was <strong>${q.answer}) ${q.correctDisplay}</strong>.`;
+  feedbackMsg.className    = 'feedback-msg skipped';
+  feedbackHint.textContent = `💡 Remember: ${q.hint}`;
+  feedbackHint.hidden      = false;
+  $('q-time-display').textContent = fmtTime(elapsed, true);
+  $('feedback-box').hidden = false;
+
+  if (isRF) {
+    $('next-btn').hidden = true;
+    setTimeout(() => {
+      state.idx++;
+      if (state.idx >= state.total) showResults();
+      else showQuestion();
+    }, 2200);
+  } else {
+    const isLast = state.idx === state.total - 1;
+    const nextBtn = $('next-btn');
+    nextBtn.textContent = isLast ? 'See My Results 🎉' : 'Next Question →';
+    nextBtn.hidden = false;
+    nextBtn.onclick = () => {
+      state.idx++;
+      if (state.idx >= state.total) showResults();
+      else showQuestion();
+    };
+  }
 }
 
 // ─── Progress persistence ─────────────────────────────────────────────────────
@@ -1115,6 +1184,7 @@ function showResults() {
   $('stat-total-time').textContent = fmtTime(totalMs);
   $('stat-avg-time').textContent   = fmtTime(avgMs, true);
   $('stat-pct').textContent        = pct + '%';
+  $('stat-skipped').textContent    = state.skipped;
   $('result-msg').textContent      = msg;
 
   // Update final progress bar to 100 %
