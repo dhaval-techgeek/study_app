@@ -142,7 +142,7 @@ function qLength(difficulty = 'medium') {
 function qWeight(difficulty = 'medium') {
   if (difficulty === 'easy') return qWeightEasy();
   if (difficulty === 'hard') return qWeightHard();
-  const t = rand(1, 9);
+  const t = rand(1, 11);
 
   if (t <= 3) {                                       // kg → g
     const kg = rand(1, 20);
@@ -187,6 +187,23 @@ function qWeight(difficulty = 'medium') {
     );
   }
 
+  if (t === 10) {                                     // g → mg
+    const g = rand(1, 10);
+    return makeQ(
+      `Convert ${hl(g + (g === 1 ? ' gram' : ' grams'))} to milligrams.`,
+      g * 1000, [g * 100, g * 10, (g + 3) * 1000, g * 10000],
+      'mg', '1 g = 1,000 mg', 'weight'
+    );
+  }
+  if (t === 11) {                                     // mg → g
+    const g = rand(1, 10);
+    return makeQ(
+      `Convert ${hl(fmtNum(g * 1000) + ' mg')} to grams.`,
+      g, [g * 10, g * 100, g + 3, g + 5],
+      'g', '1,000 mg = 1 g', 'weight'
+    );
+  }
+
   // t === 9: word problems
   const scenes = [
     { text: `A bag of potatoes weighs ${hl('3 kg')}. How many grams is that?`,
@@ -203,6 +220,12 @@ function qWeight(difficulty = 'medium') {
       correct: 7000, wrongs: [700, 70000, 70],   unit: 'kg',     hint: '1 tonne = 1,000 kg' },
     { text: `A dictionary weighs ${hl('1,500 g')}. How many grams in ${hl('2 dictionaries')}?`,
       correct: 3000, wrongs: [1500, 4500, 6000], unit: 'g',      hint: 'Multiply: 2 × 1,500 g' },
+    { text: `A vitamin tablet contains ${hl('5 g')} of powder. How many milligrams?`,
+      correct: 5000, wrongs: [500, 50000, 50],   unit: 'mg',     hint: '1 g = 1,000 mg' },
+    { text: `A medicine dose is ${hl('4,000 mg')}. How many grams is that?`,
+      correct: 4,    wrongs: [40, 400, 4000],    unit: 'g',      hint: '1,000 mg = 1 g' },
+    { text: `A spice jar holds ${hl('6 g')} of pepper. How many mg is that?`,
+      correct: 6000, wrongs: [600, 60000, 60],   unit: 'mg',     hint: '1 g = 1,000 mg' },
   ];
   const s = pick(scenes);
   return makeQ(s.text, s.correct, s.wrongs, s.unit, s.hint, 'weight');
@@ -316,7 +339,7 @@ function qLengthEasy() {
 }
 
 function qWeightEasy() {
-  const t = rand(1, 4);
+  const t = rand(1, 5);
   if (t === 1) {
     const kg = rand(1, 5);
     return makeQ(`Convert ${hl(kg + ' kg')} to grams.`,
@@ -332,11 +355,19 @@ function qWeightEasy() {
     return makeQ(`${hl(fmtNum(kg * 1000) + ' g')} is how many kilograms?`,
       kg, [kg * 10, kg * 100, kg + 2], 'kg', '1,000 g = 1 kg', 'weight');
   }
+  if (t === 4) {                                        // g → mg
+    const g = rand(1, 5);
+    return makeQ(`Convert ${hl(g + (g === 1 ? ' gram' : ' grams'))} to milligrams.`,
+      g * 1000, [g * 100, g * 10, (g + 2) * 1000], 'mg', '1 g = 1,000 mg', 'weight');
+  }
+  // t === 5: word problems (including mg)
   const scenes = [
-    { text: `A bag weighs ${hl('3 kg')}. How many grams?`,       correct: 3000, wrongs: [300, 30000, 30],   unit: 'g',  hint: '1 kg = 1,000 g' },
-    { text: `A lorry weighs ${hl('4 tonnes')}. How many kg?`,    correct: 4000, wrongs: [400, 40000, 40],   unit: 'kg', hint: '1 tonne = 1,000 kg' },
-    { text: `A parcel is ${hl('5,000 g')}. How many kilograms?`, correct: 5,    wrongs: [50, 500, 5000],    unit: 'kg', hint: '1,000 g = 1 kg' },
-    { text: `A stone weighs ${hl('2 kg')}. How many grams?`,     correct: 2000, wrongs: [200, 20000, 20],   unit: 'g',  hint: '1 kg = 1,000 g' },
+    { text: `A bag weighs ${hl('3 kg')}. How many grams?`,           correct: 3000, wrongs: [300, 30000, 30],     unit: 'g',  hint: '1 kg = 1,000 g' },
+    { text: `A lorry weighs ${hl('4 tonnes')}. How many kg?`,        correct: 4000, wrongs: [400, 40000, 40],     unit: 'kg', hint: '1 tonne = 1,000 kg' },
+    { text: `A parcel is ${hl('5,000 g')}. How many kilograms?`,     correct: 5,    wrongs: [50, 500, 5000],      unit: 'kg', hint: '1,000 g = 1 kg' },
+    { text: `A stone weighs ${hl('2 kg')}. How many grams?`,         correct: 2000, wrongs: [200, 20000, 20],     unit: 'g',  hint: '1 kg = 1,000 g' },
+    { text: `A tablet contains ${hl('2 g')} of sugar. How many mg?`, correct: 2000, wrongs: [200, 20000, 20],     unit: 'mg', hint: '1 g = 1,000 mg' },
+    { text: `A powder weighs ${hl('3,000 mg')}. How many grams?`,    correct: 3,    wrongs: [30, 300, 3000],      unit: 'g',  hint: '1,000 mg = 1 g' },
   ];
   const s = pick(scenes);
   return makeQ(s.text, s.correct, s.wrongs, s.unit, s.hint, 'weight');
@@ -423,7 +454,7 @@ function qLengthHard() {
 }
 
 function qWeightHard() {
-  const t = rand(1, 7);
+  const t = rand(1, 9);
   if (t <= 2) {
     // g → kg (decimal result)
     const g = pick([500, 1500, 2500, 750, 250, 3500]);
@@ -467,13 +498,34 @@ function qWeightHard() {
     const f = pick(fracs);
     return makeQ(f.text, f.correct, [f.correct * 2, f.correct / 2, f.correct * 10], 'kg', f.hint, 'weight');
   }
+  if (t === 8) {                                      // decimal mg → g
+    const mg = pick([500, 1500, 2500, 750, 250, 3500]);
+    const g  = mg / 1000;
+    return makeQ(`Convert ${hl(fmtNum(mg) + ' mg')} to grams.`,
+      g, [g * 10, g * 100, g + 1], 'g', '1,000 mg = 1 g', 'weight');
+  }
+  if (t === 9) {                                      // fraction g → mg
+    const fracs = [
+      { text: `${hl('½ g')} = how many milligrams?`,  correct: 500,  hint: '1 g = 1,000 mg, so ½ g = 500 mg' },
+      { text: `${hl('¼ g')} = how many milligrams?`,  correct: 250,  hint: '1 g = 1,000 mg, so ¼ g = 250 mg' },
+      { text: `${hl('¾ g')} = how many milligrams?`,  correct: 750,  hint: '1 g = 1,000 mg, so ¾ g = 750 mg' },
+      { text: `${hl('1½ g')} = how many milligrams?`, correct: 1500, hint: '1 g = 1,000 mg, so 1½ g = 1,500 mg' },
+      { text: `${hl('2½ g')} = how many milligrams?`, correct: 2500, hint: '1 g = 1,000 mg, so 2½ g = 2,500 mg' },
+    ];
+    const f = pick(fracs);
+    return makeQ(f.text, f.correct, [f.correct / 2, f.correct * 2, f.correct / 10], 'mg', f.hint, 'weight');
+  }
+
   // t === 7: word problems
   const scenes = [
     { text: `A bag of flour weighs ${hl('500 g')}. How many kilograms?`,   correct: 0.5, wrongs: [5, 50, 0.05],   unit: 'kg',     hint: '500 g = 0.5 kg (half a kilogram)' },
     { text: `A parcel weighs ${hl('1,500 g')}. How many kilograms?`,       correct: 1.5, wrongs: [15, 150, 0.15], unit: 'kg',     hint: '1,500 g = 1.5 kg' },
     { text: `A box weighs ${hl('0.75 kg')}. How many grams?`,              correct: 750, wrongs: [75, 7500, 7.5], unit: 'g',      hint: '0.75 kg = 750 g' },
     { text: `A truck carries ${hl('2,500 kg')}. How many tonnes?`,         correct: 2.5, wrongs: [25, 250, 0.25], unit: 'tonnes', hint: '2,500 kg = 2.5 tonnes' },
-    { text: `A sack weighs ${hl('750 g')}. How many kilograms is that?`,   correct: 0.75, wrongs: [7.5, 75, 0.075], unit: 'kg',   hint: '750 g = 0.75 kg (¾ kilogram)' },
+    { text: `A sack weighs ${hl('750 g')}. How many kilograms is that?`,   correct: 0.75, wrongs: [7.5, 75, 0.075],  unit: 'kg', hint: '750 g = 0.75 kg (¾ kilogram)' },
+    { text: `A capsule contains ${hl('500 mg')} of medicine. How many grams?`, correct: 0.5, wrongs: [5, 50, 0.05], unit: 'g',  hint: '500 mg = 0.5 g (half a gram)' },
+    { text: `A powder dose is ${hl('1,500 mg')}. How many grams is that?`, correct: 1.5, wrongs: [15, 150, 0.15],   unit: 'g',  hint: '1,500 mg = 1.5 g' },
+    { text: `A supplement contains ${hl('0.25 g')} of iron. How many milligrams?`, correct: 250, wrongs: [25, 2500, 2.5], unit: 'mg', hint: '0.25 g = 250 mg (¼ of 1,000)' },
   ];
   const s = pick(scenes);
   return makeQ(s.text, s.correct, s.wrongs, s.unit, s.hint, 'weight');
