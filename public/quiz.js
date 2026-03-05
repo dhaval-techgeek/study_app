@@ -601,11 +601,19 @@ function animateEl(el, cls) {
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
+function updateNav() {
+  const loggedIn = !!state.userId;
+  $('nav-username').textContent = loggedIn ? `@${state.username}` : '';
+  $('nav-username').hidden      = !loggedIn;
+  $('nav-logout-btn').hidden    = !loggedIn;
+}
+
 function doLogout() {
   localStorage.removeItem('ks2_auth');
   state.userId   = null;
   state.username = '';
   stopTimer();
+  updateNav();
   showScreen('screen-login');
   initLoginScreen();
 }
@@ -619,11 +627,13 @@ function initApp() {
       const auth = JSON.parse(saved);
       state.userId   = auth.userId;
       state.username = auth.username;
+      updateNav();
       showScreen('screen-welcome');
       initWelcome();
       return;
     } catch { /* invalid — fall through to login */ }
   }
+  updateNav();
   showScreen('screen-login');
   initLoginScreen();
 }
@@ -679,6 +689,7 @@ function initLoginScreen() {
       state.userId   = data.userId;
       state.username = data.username;
       localStorage.setItem('ks2_auth', JSON.stringify({ userId: data.userId, username: data.username }));
+      updateNav();
       showScreen('screen-welcome');
       initWelcome();
     } catch {
@@ -780,6 +791,15 @@ function startQuiz() {
 
   showScreen('screen-quiz');
   $('hdr-name').textContent = state.name;
+
+  $('quiz-quit-btn').onclick = () => {
+    if (confirm('Quit the quiz? Your progress won\'t be saved.')) {
+      stopTimer();
+      showScreen('screen-welcome');
+      initWelcome();
+    }
+  };
+
   startTimer();
   showQuestion();
 }

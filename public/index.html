@@ -7,6 +7,17 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<nav class="global-nav">
+  <div class="nav-brand">
+    <span class="nav-logo">🔢</span>
+    <span class="nav-title">KS2 Unit Quiz</span>
+  </div>
+  <div class="nav-right">
+    <span id="nav-username" class="nav-username" hidden></span>
+    <button id="nav-logout-btn" class="nav-logout-btn logout-btn" hidden>Log out</button>
+  </div>
+</nav>
+
 <div id="app">
 
   <!-- ══════════════════════════════════════════════════════ -->
@@ -143,6 +154,7 @@
     <div class="quiz-top">
       <!-- Header bar -->
       <header class="quiz-header">
+        <button id="quiz-quit-btn" class="quiz-quit-btn">← Home</button>
         <div class="hdr-left">
           <span id="hdr-name" class="hdr-name"></span>
           <span id="hdr-score" class="hdr-score">Score: 0 / 10</span>
@@ -261,7 +273,6 @@
       </details>
 
       <button id="play-again-btn" class="btn-primary">Play Again</button>
-      <button class="logout-btn" style="margin-top:0.75rem">← Log out</button>
     </div>
   </div>
 
