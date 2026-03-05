@@ -167,6 +167,7 @@ async function apiAttempt(req, res) {
 async function apiHistory(req, res) {
   const url = new URL(req.url, "http://localhost");
   const userId = parseInt(url.searchParams.get("userId"), 10);
+  const limit  = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "10", 10), 1), 50);
   if (!userId) return json(res, 400, { error: "userId is required." });
   if (!pool) return json(res, 503, { error: "Database unavailable." });
 
@@ -177,7 +178,7 @@ async function apiHistory(req, res) {
        FROM   attempts
        WHERE  user_id = ?
        ORDER  BY created_at DESC
-       LIMIT  10`,
+       LIMIT  ${limit}`,
       [userId],
     );
     json(res, 200, { attempts: rows });

@@ -75,6 +75,33 @@
         </button>
       </div>
 
+      <p class="choose-label">Difficulty:</p>
+      <div class="diff-grid">
+        <button class="diff-btn" data-diff="easy">
+          <span class="diff-icon">🌱</span>
+          <span class="diff-name">Easy</span>
+          <span class="diff-desc">Whole numbers</span>
+        </button>
+        <button class="diff-btn selected" data-diff="medium">
+          <span class="diff-icon">⚡</span>
+          <span class="diff-name">Medium</span>
+          <span class="diff-desc">Mixed questions</span>
+        </button>
+        <button class="diff-btn" data-diff="hard">
+          <span class="diff-icon">🔥</span>
+          <span class="diff-name">Hard</span>
+          <span class="diff-desc">Decimals &amp; fractions</span>
+        </button>
+      </div>
+
+      <p class="choose-label">Questions per quiz:</p>
+      <div class="qcount-grid">
+        <button class="qcount-btn" data-count="5">5</button>
+        <button class="qcount-btn selected" data-count="10">10</button>
+        <button class="qcount-btn" data-count="15">15</button>
+        <button class="qcount-btn" data-count="20">20</button>
+      </div>
+
       <p class="choose-label">Choose a Category:</p>
       <div class="cat-grid">
         <button class="cat-btn" data-cat="length">
@@ -102,8 +129,9 @@
       <button id="start-btn" class="btn-primary" disabled>
         Start Quiz →
       </button>
-
-      <button class="logout-btn">← Log out</button>
+      <button id="history-btn" class="btn-secondary">
+        📊 My Progress
+      </button>
     </div>
   </div>
 
@@ -234,6 +262,56 @@
 
       <button id="play-again-btn" class="btn-primary">Play Again</button>
       <button class="logout-btn" style="margin-top:0.75rem">← Log out</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  SCREEN 4 – History / My Progress                    -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div id="screen-history" class="screen">
+    <div class="hist-page">
+
+      <div class="hist-header">
+        <button id="hist-back-btn" class="back-btn">← Back</button>
+        <h2 class="hist-title">📊 My Progress</h2>
+        <span id="hist-username" class="hist-username"></span>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="hist-summary" id="hist-summary" hidden>
+        <div class="stat-box">
+          <div id="hs-total"   class="stat-val">—</div>
+          <div class="stat-lbl">Total Quizzes</div>
+        </div>
+        <div class="stat-box">
+          <div id="hs-best"    class="stat-val">—</div>
+          <div class="stat-lbl">Best Score</div>
+        </div>
+        <div class="stat-box">
+          <div id="hs-avg"     class="stat-val">—</div>
+          <div class="stat-lbl">Avg Score</div>
+        </div>
+        <div class="stat-box">
+          <div id="hs-streak"  class="stat-val">—</div>
+          <div class="stat-lbl">Quizzes ≥ 80%</div>
+        </div>
+      </div>
+
+      <!-- Attempts table -->
+      <div class="hist-card">
+        <div class="hist-col-hdr">
+          <span>Date</span>
+          <span>Category</span>
+          <span>Mode</span>
+          <span>Score</span>
+          <span>%</span>
+          <span>Time</span>
+        </div>
+        <div id="hist-list" class="hist-list">
+          <p class="hist-empty">Loading your history…</p>
+        </div>
+      </div>
+
     </div>
   </div>
 
