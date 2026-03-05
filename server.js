@@ -6,16 +6,16 @@ const path = require("path");
 const crypto = require("crypto");
 const mysql = require("mysql2/promise");
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
-// ── DB credentials – replace with real values ─────────────────────────────────
+// ── DB credentials – set via environment variables on the server ───────────────
 const DB_CONFIG = {
-  host: "localhost",
-  user: "root",
-  password: "MyStrongPass123!",
-  database: "study_app_db",
+  host    : process.env.DB_HOST     || "localhost",
+  user    : process.env.DB_USER     || "root",
+  password: process.env.DB_PASSWORD || "MyStrongPass123!",
+  database: process.env.DB_NAME     || "study_app_db",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit   : 10,
 };
 
 // ── Static MIME map ───────────────────────────────────────────────────────────
