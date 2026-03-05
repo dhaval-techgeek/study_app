@@ -33,11 +33,19 @@
         <button class="tab-btn" data-tab="register">Register</button>
       </div>
 
+      <!-- Register only -->
+      <div id="reg-name-group" class="form-group" style="display:none">
+        <label for="login-name">Name</label>
+        <input type="text" id="login-name"
+               placeholder="Enter your name…" maxlength="50"
+               autocomplete="name" />
+      </div>
+
       <div class="form-group">
-        <label for="login-username">Username</label>
-        <input type="text" id="login-username"
-               placeholder="Enter your username…" maxlength="50"
-               autocomplete="username" />
+        <label for="login-email">Email Address</label>
+        <input type="email" id="login-email"
+               placeholder="Enter your email address…" maxlength="100"
+               autocomplete="email" />
       </div>
 
       <div class="form-group">

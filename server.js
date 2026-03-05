@@ -59,11 +59,19 @@ let pool = null;
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id         INT AUTO_INCREMENT PRIMARY KEY,
-        username   VARCHAR(50)  UNIQUE NOT NULL,
+        name       VARCHAR(50)  NOT NULL,
+        email      VARCHAR(100) UNIQUE NOT NULL,
         password   VARCHAR(64)  NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    // Migrate existing tables that used 'username' instead of name/email
+    for (const sql of [
+      "ALTER TABLE users ADD COLUMN name  VARCHAR(50)  NOT NULL DEFAULT '' AFTER id",
+      "ALTER TABLE users ADD COLUMN email VARCHAR(100) UNIQUE AFTER name",
+    ]) {
+      try { await pool.execute(sql); } catch { /* column already exists */ }
+    }
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS attempts (
         id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -87,44 +95,45 @@ let pool = null;
 
 // ── API Handlers ──────────────────────────────────────────────────────────────
 async function apiRegister(req, res) {
-  const { username, password } = await readBody(req);
-  if (!username?.trim() || !password)
-    return json(res, 400, { error: "Username and password are required." });
+  const { name, email, password } = await readBody(req);
+  if (!name?.trim() || !email?.trim() || !password)
+    return json(res, 400, { error: "Name, email address and password are required." });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+    return json(res, 400, { error: "Please enter a valid email address." });
   if (!pool) return json(res, 503, { error: "Database unavailable." });
 
   try {
-    await pool.execute("INSERT INTO users (username, password) VALUES (?, ?)", [
-      username.trim(),
+    await pool.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [
+      name.trim(),
+      email.trim().toLowerCase(),
       hashPw(password),
     ]);
     const [rows] = await pool.execute(
-      "SELECT id, username FROM users WHERE username = ?",
-      [username.trim()],
+      "SELECT id, name, email FROM users WHERE email = ?",
+      [email.trim().toLowerCase()],
     );
-    json(res, 201, { userId: rows[0].id, username: rows[0].username });
+    json(res, 201, { userId: rows[0].id, name: rows[0].name, email: rows[0].email });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY")
-      return json(res, 409, {
-        error: "Username already taken. Please choose another.",
-      });
+      return json(res, 409, { error: "An account with that email already exists." });
     json(res, 500, { error: "Server error." });
   }
 }
 
 async function apiLogin(req, res) {
-  const { username, password } = await readBody(req);
-  if (!username?.trim() || !password)
-    return json(res, 400, { error: "Username and password are required." });
+  const { email, password } = await readBody(req);
+  if (!email?.trim() || !password)
+    return json(res, 400, { error: "Email address and password are required." });
   if (!pool) return json(res, 503, { error: "Database unavailable." });
 
   try {
     const [rows] = await pool.execute(
-      "SELECT id, username FROM users WHERE username = ? AND password = ?",
-      [username.trim(), hashPw(password)],
+      "SELECT id, name, email FROM users WHERE email = ? AND password = ?",
+      [email.trim().toLowerCase(), hashPw(password)],
     );
     if (!rows[0])
-      return json(res, 401, { error: "Invalid username or password." });
-    json(res, 200, { userId: rows[0].id, username: rows[0].username });
+      return json(res, 401, { error: "Invalid email or password." });
+    json(res, 200, { userId: rows[0].id, name: rows[0].name, email: rows[0].email });
   } catch {
     json(res, 500, { error: "Server error." });
   }

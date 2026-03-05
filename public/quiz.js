@@ -548,7 +548,8 @@ function buildSet(category, n = 10, difficulty = 'medium') {
 // ─── Quiz State ───────────────────────────────────────────────────────────────
 const state = {
   userId:     null,
-  username:   '',
+  name:       '',
+  email:      '',
   name:       '',
   category:   '',
   mode:       'standard',
@@ -604,7 +605,7 @@ function animateEl(el, cls) {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 function updateNav() {
   const loggedIn = !!state.userId;
-  $('nav-username').textContent      = loggedIn ? `@${state.username}` : '';
+  $('nav-username').textContent      = loggedIn ? state.name : '';
   $('nav-username').style.display    = loggedIn ? '' : 'none';
   $('nav-logout-btn').style.display  = loggedIn ? '' : 'none';
 }
@@ -612,7 +613,8 @@ function updateNav() {
 function doLogout() {
   localStorage.removeItem('ks2_auth');
   state.userId   = null;
-  state.username = '';
+  state.name  = '';
+  state.email = '';
   stopTimer();
   updateNav();
   showScreen('screen-login');
@@ -626,8 +628,9 @@ function initApp() {
   if (saved) {
     try {
       const auth = JSON.parse(saved);
-      state.userId   = auth.userId;
-      state.username = auth.username;
+      state.userId = auth.userId;
+      state.name   = auth.name;
+      state.email  = auth.email;
       updateNav();
       showScreen('screen-welcome');
       initWelcome();
@@ -640,18 +643,22 @@ function initApp() {
 }
 
 function initLoginScreen() {
-  const usernameInput = $('login-username');
+  const nameInput     = $('login-name');
+  const emailInput    = $('login-email');
   const passwordInput = $('login-password');
+  const nameGroup     = $('reg-name-group');
   const submitBtn     = $('login-submit');
   const errorEl       = $('login-error');
   const tabs          = document.querySelectorAll('.tab-btn');
   let mode = 'login';
 
-  usernameInput.value = '';
+  nameInput.value     = '';
+  emailInput.value    = '';
   passwordInput.value = '';
   errorEl.hidden      = true;
   submitBtn.disabled  = false;
   submitBtn.textContent = 'Log In';
+  nameGroup.style.display = 'none';
   tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'login'));
 
   tabs.forEach(tab => {
@@ -659,26 +666,35 @@ function initLoginScreen() {
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       mode = tab.dataset.tab;
-      submitBtn.textContent = mode === 'login' ? 'Log In' : 'Register';
+      const isRegister = mode === 'register';
+      submitBtn.textContent   = isRegister ? 'Register' : 'Log In';
+      nameGroup.style.display = isRegister ? '' : 'none';
       errorEl.hidden = true;
     };
   });
 
   async function doSubmit() {
-    const username = usernameInput.value.trim();
+    const email    = emailInput.value.trim();
     const password = passwordInput.value;
-    if (!username || !password) {
-      errorEl.textContent = 'Please enter both username and password.';
-      errorEl.hidden = false;
-      return;
+    const name     = nameInput.value.trim();
+
+    if (mode === 'register' && !name) {
+      errorEl.textContent = 'Please enter your name.';
+      errorEl.hidden = false; return;
     }
+    if (!email || !password) {
+      errorEl.textContent = 'Please enter your email address and password.';
+      errorEl.hidden = false; return;
+    }
+
     submitBtn.disabled = true;
     errorEl.hidden     = true;
     try {
+      const body = mode === 'register' ? { name, email, password } : { email, password };
       const res  = await fetch(`/api/${mode}`, {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ username, password }),
+        body   : JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -687,9 +703,10 @@ function initLoginScreen() {
         submitBtn.disabled  = false;
         return;
       }
-      state.userId   = data.userId;
-      state.username = data.username;
-      localStorage.setItem('ks2_auth', JSON.stringify({ userId: data.userId, username: data.username }));
+      state.userId = data.userId;
+      state.name   = data.name;
+      state.email  = data.email;
+      localStorage.setItem('ks2_auth', JSON.stringify({ userId: data.userId, name: data.name, email: data.email }));
       updateNav();
       showScreen('screen-welcome');
       initWelcome();
@@ -701,7 +718,7 @@ function initLoginScreen() {
   }
 
   submitBtn.onclick = doSubmit;
-  [usernameInput, passwordInput].forEach(el => {
+  [nameInput, emailInput, passwordInput].forEach(el => {
     el.onkeydown = e => { if (e.key === 'Enter') doSubmit(); };
   });
 }
@@ -716,7 +733,7 @@ function initWelcome() {
   let selectedTotal = 10;
 
   // Reset state
-  nameInput.value = state.username || '';
+  nameInput.value = state.name || '';
   startBtn.disabled = true;
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
@@ -1093,7 +1110,7 @@ async function loadHistory() {
 async function showHistory() {
   showScreen('screen-history');
 
-  $('hist-username').textContent = state.username ? `@${state.username}` : '';
+  $('hist-username').textContent = state.name || '';
   $('hist-summary').hidden = true;
   $('hist-list').innerHTML = '<p class="hist-empty">Loading your history…</p>';
 
