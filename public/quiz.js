@@ -603,9 +603,9 @@ function animateEl(el, cls) {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 function updateNav() {
   const loggedIn = !!state.userId;
-  $('nav-username').textContent = loggedIn ? `@${state.username}` : '';
-  $('nav-username').hidden      = !loggedIn;
-  $('nav-logout-btn').hidden    = !loggedIn;
+  $('nav-username').textContent      = loggedIn ? `@${state.username}` : '';
+  $('nav-username').style.display    = loggedIn ? '' : 'none';
+  $('nav-logout-btn').style.display  = loggedIn ? '' : 'none';
 }
 
 function doLogout() {
