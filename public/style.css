@@ -61,6 +61,52 @@ body {
 }
 .nav-logout-btn:hover { color: var(--error); border-color: var(--error); background: var(--error-bg); }
 
+/* ── Nav Menu (Maths dropdown) ───────────────────────────────────────────── */
+.nav-menu { display: flex; align-items: center; gap: 0.25rem; }
+.nav-item { position: relative; }
+.nav-item-btn {
+  padding: 0.3rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-item-btn:hover { background: var(--primary-light, #ede9fe); color: var(--primary); }
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 160px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 300;
+  overflow: hidden;
+}
+.nav-item:hover .nav-dropdown,
+.nav-item:focus-within .nav-dropdown { display: block; }
+.nav-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.nav-dropdown-item:hover { background: var(--primary-light, #ede9fe); color: var(--primary); }
+
 /* ── Screen Management ───────────────────────────────────────────────────── */
 .screen { display: none; }
 
@@ -850,4 +896,33 @@ body {
   #rapidfire-input-wrap { flex-direction: column; gap: 0.5rem; }
   .rf-input             { font-size: 1.15rem; padding: 0.75rem 0.75rem; }
   .rf-submit-btn        { width: 100%; padding: 0.75rem; }
+
+  .tt-table-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ── Times Table Screen ───────────────────────────────────────────────────── */
+.tt-card { max-width: 560px; }
+
+.tt-table-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.tt-table-btn {
+  padding: 0.45rem 0.25rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.tt-table-btn:hover  { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+.tt-table-btn.selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+.tt-table-btn.random-btn { grid-column: span 2; }

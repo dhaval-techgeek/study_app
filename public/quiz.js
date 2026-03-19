@@ -968,6 +968,7 @@ function updateNav() {
   $('nav-username').textContent      = loggedIn ? state.name : '';
   $('nav-username').style.display    = loggedIn ? '' : 'none';
   $('nav-logout-btn').style.display  = loggedIn ? '' : 'none';
+  $('nav-menu').style.display        = loggedIn ? '' : 'none';
 }
 
 function doLogout() {
@@ -1585,3 +1586,247 @@ function showResults() {
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TIMES TABLE QUIZ
+// ══════════════════════════════════════════════════════════════════════════════
+
+const ttState = {
+  table:          null,   // 13-30 or 'random'
+  total:          10,
+  questions:      [],
+  idx:            0,
+  score:          0,
+  answered:       false,
+  quizStart:      0,
+  qStart:         0,
+  timerInterval:  null,
+};
+
+// ─── Timer helpers ────────────────────────────────────────────────────────────
+function ttStartTimer() {
+  ttState.quizStart = Date.now();
+  const el = $('tt-hdr-timer');
+  ttState.timerInterval = setInterval(() => {
+    if (el) el.textContent = fmtTime(Date.now() - ttState.quizStart);
+  }, 500);
+}
+
+function ttStopTimer() {
+  clearInterval(ttState.timerInterval);
+  ttState.timerInterval = null;
+}
+
+// ─── Question generator ───────────────────────────────────────────────────────
+function ttBuildQuestions(table, total) {
+  // Generate a pool of multipliers 1-12, repeated as needed
+  const multipliers = shuffle(
+    Array.from({ length: 12 }, (_, i) => i + 1)
+  ).slice(0, Math.min(total, 12));
+
+  // If total > 12, fill remaining with random multipliers
+  while (multipliers.length < total) {
+    multipliers.push(rand(1, 12));
+  }
+
+  return multipliers.slice(0, total).map(multiplier => {
+    const t      = table === 'random' ? rand(13, 30) : table;
+    const correct = t * multiplier;
+
+    // Generate 3 plausible wrong answers
+    const wrongs = new Set();
+    // Wrong multipliers of same table
+    let attempts = 0;
+    while (wrongs.size < 3 && attempts < 30) {
+      const wm = rand(1, 12);
+      const w  = t * wm;
+      if (w !== correct) wrongs.add(w);
+      attempts++;
+    }
+    // Fallback: offset by small amount
+    if (wrongs.size < 3) wrongs.add(correct + rand(1, t));
+    if (wrongs.size < 3) wrongs.add(correct - rand(1, t > 1 ? t - 1 : 1));
+
+    const pool = shuffle([correct, ...[...wrongs].slice(0, 3)]);
+    const LETTERS   = ['A', 'B', 'C', 'D'];
+    const answerIdx = pool.indexOf(correct);
+
+    return {
+      table:      t,
+      multiplier,
+      correct,
+      values:     pool.map(String),
+      answer:     LETTERS[answerIdx],
+    };
+  });
+}
+
+// ─── Setup screen ─────────────────────────────────────────────────────────────
+function initTimesTable() {
+  showScreen('screen-times-table');
+  ttShowPanel('setup');
+
+  // Build table-selection buttons (Random + 13-30)
+  const grid = $('tt-table-grid');
+  grid.innerHTML = '';
+  ttState.table = null;
+
+  const makeTableBtn = (label, value, extraClass = '') => {
+    const btn = document.createElement('button');
+    btn.className = `tt-table-btn${extraClass ? ' ' + extraClass : ''}`;
+    btn.textContent = label;
+    btn.dataset.table = value;
+    btn.onclick = () => {
+      grid.querySelectorAll('.tt-table-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      ttState.table = value === 'random' ? 'random' : Number(value);
+      $('tt-start-btn').disabled = false;
+    };
+    return btn;
+  };
+
+  grid.appendChild(makeTableBtn('🎲 Random', 'random', 'random-btn'));
+  for (let t = 13; t <= 30; t++) {
+    grid.appendChild(makeTableBtn(`${t}×`, String(t)));
+  }
+
+  // Questions-per-quiz selector
+  ttState.total = 10;
+  const qcountBtns = $('tt-qcount-grid').querySelectorAll('.qcount-btn');
+  qcountBtns.forEach(btn => {
+    btn.onclick = () => {
+      qcountBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      ttState.total = Number(btn.dataset.count);
+    };
+  });
+
+  $('tt-start-btn').disabled = true;
+  $('tt-start-btn').onclick  = ttStartQuiz;
+  $('tt-home-btn').onclick   = () => { showScreen('screen-welcome'); initWelcome(); };
+}
+
+// ─── Panel switcher (within the screen) ──────────────────────────────────────
+function ttShowPanel(panel) {
+  $('tt-setup-panel').style.display   = panel === 'setup'   ? '' : 'none';
+  $('tt-quiz-panel').style.display    = panel === 'quiz'    ? '' : 'none';
+  $('tt-results-panel').style.display = panel === 'results' ? '' : 'none';
+}
+
+// ─── Start quiz ───────────────────────────────────────────────────────────────
+function ttStartQuiz() {
+  ttState.questions = ttBuildQuestions(ttState.table, ttState.total);
+  ttState.idx       = 0;
+  ttState.score     = 0;
+  ttState.answered  = false;
+
+  ttShowPanel('quiz');
+  ttStopTimer();
+  ttStartTimer();
+  ttShowQuestion();
+
+  $('tt-quit-btn').onclick = () => {
+    if (confirm('Quit the quiz? Your progress won\'t be saved.')) {
+      ttStopTimer();
+      initTimesTable();
+    }
+  };
+}
+
+// ─── Show question ────────────────────────────────────────────────────────────
+function ttShowQuestion() {
+  const q = ttState.questions[ttState.idx];
+  ttState.qStart   = Date.now();
+  ttState.answered = false;
+
+  $('tt-q-meta').textContent = `Question ${ttState.idx + 1} of ${ttState.total}`;
+  $('tt-q-text').innerHTML   =
+    `What is ${hl(q.table)} × ${hl(q.multiplier)} ?`;
+  $('tt-hdr-score').textContent      = `Score: ${ttState.score} / ${ttState.total}`;
+  $('tt-progress-fill').style.width  = `${(ttState.idx / ttState.total) * 100}%`;
+  $('tt-progress-label').textContent = `${ttState.idx} / ${ttState.total}`;
+  $('tt-feedback-box').hidden        = true;
+
+  const grid = $('tt-options-grid');
+  grid.innerHTML = '';
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  q.values.forEach((val, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${LETTERS[i]}</span><span>${val}</span>`;
+    btn.addEventListener('click', () => ttHandleAnswer(LETTERS[i], q, btn));
+    grid.appendChild(btn);
+  });
+
+  animateEl(document.querySelector('#tt-quiz-panel .question-card'), 'anim-fade');
+}
+
+// ─── Handle answer ────────────────────────────────────────────────────────────
+function ttHandleAnswer(letter, q, clickedBtn) {
+  if (ttState.answered) return;
+  ttState.answered = true;
+
+  const correct = letter === q.answer;
+  if (correct) ttState.score++;
+
+  playSound(correct ? 'correct' : 'wrong');
+
+  // Style all buttons
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  $('tt-options-grid').querySelectorAll('.option-btn').forEach((btn, i) => {
+    btn.disabled = true;
+    if (LETTERS[i] === q.answer) btn.classList.add('correct');
+    else if (btn === clickedBtn)  btn.classList.add('wrong');
+  });
+
+  const feedbackMsg = $('tt-feedback-msg');
+  const feedbackHint = $('tt-feedback-hint');
+  feedbackMsg.textContent  = correct
+    ? '✅ Correct!'
+    : `❌ Wrong — the answer is ${q.correct}`;
+  feedbackHint.textContent = `${q.table} × ${q.multiplier} = ${q.correct}`;
+  $('tt-feedback-box').hidden = false;
+
+  const isLast = ttState.idx >= ttState.total - 1;
+  const nextBtn = $('tt-next-btn');
+  nextBtn.textContent = isLast ? 'See Results →' : 'Next Question →';
+  nextBtn.onclick = () => {
+    ttState.idx++;
+    if (ttState.idx < ttState.total) {
+      ttShowQuestion();
+    } else {
+      ttFinish();
+    }
+  };
+}
+
+// ─── Results ──────────────────────────────────────────────────────────────────
+function ttFinish() {
+  ttStopTimer();
+  const totalMs = Date.now() - ttState.quizStart;
+  const pct     = Math.round((ttState.score / ttState.total) * 100);
+
+  const [emoji, grade, msg] =
+    pct === 100 ? ['🌟', '★★★ Perfect!',      "Flawless! You know these tables inside out!"]       :
+    pct >= 80   ? ['🎉', '★★  Excellent!',      "Brilliant! You really know your times tables!"]      :
+    pct >= 60   ? ['👍', '★   Good Work!',       "Well done! A bit more practice and you'll ace it!"] :
+    pct >= 40   ? ['🙂', '    Keep Trying!',     "Good effort! Review the tables and try again."]     :
+                  ['📚', '    Keep Practising!', "Don't give up! Practice makes perfect."];
+
+  ttShowPanel('results');
+  $('tt-result-emoji').textContent    = emoji;
+  $('tt-result-greeting').textContent = `Great effort, ${state.name}!`;
+  $('tt-big-score').textContent       = `${ttState.score} / ${ttState.total}`;
+  $('tt-grade-badge').textContent     = grade;
+  $('tt-stat-time').textContent       = fmtTime(totalMs);
+  $('tt-stat-pct').textContent        = pct + '%';
+  $('tt-result-msg').textContent      = msg;
+
+  $('tt-progress-fill').style.width   = '100%';
+  $('tt-progress-label').textContent  = `${ttState.total} / ${ttState.total}`;
+
+  animateEl(document.querySelector('#tt-results-panel .results-card'), 'anim-pop');
+
+  $('tt-play-again-btn').onclick = () => initTimesTable();
+  $('tt-home-from-results-btn').onclick = () => { showScreen('screen-welcome'); initWelcome(); };
+}

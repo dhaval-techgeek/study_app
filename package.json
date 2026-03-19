@@ -1,7 +1,7 @@
 {
-  "name": "ks2-unit-conversion-quiz",
+  "name": "11plus-study-app",
   "version": "1.0.0",
-  "description": "Interactive unit conversion quiz for UK KS2 students (Weight, Length, Capacity)",
+  "description": "11+ Study App",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

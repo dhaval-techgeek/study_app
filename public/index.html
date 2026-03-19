@@ -3,15 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KS2 Unit Conversion Quiz</title>
+  <title>11+ Study App</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <nav class="global-nav">
   <div class="nav-brand">
     <span class="nav-logo">🔢</span>
-    <span class="nav-title">KS2 Unit Quiz</span>
+    <span class="nav-title">11+ Study App</span>
   </div>
+  <nav id="nav-menu" class="nav-menu" style="display:none">
+    <div class="nav-item">
+      <button class="nav-item-btn">Maths ▾</button>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-item" onclick="showScreen('screen-welcome')">Unit Conversion</button>
+        <button class="nav-dropdown-item" onclick="initTimesTable()">Times Table</button>
+      </div>
+    </div>
+  </nav>
   <div class="nav-right">
     <span id="nav-username" class="nav-username" style="display:none"></span>
     <button id="nav-logout-btn" class="nav-logout-btn logout-btn" style="display:none">Log out</button>
@@ -26,7 +35,7 @@
   <div id="screen-login" class="screen">
     <div class="card login-card">
       <div class="logo">🔢</div>
-      <h1 class="login-title">KS2 Unit Conversion Quiz</h1>
+      <h1 class="login-title">11+ Study App</h1>
 
       <div class="login-tabs">
         <button class="tab-btn active" data-tab="login">Log In</button>
@@ -67,7 +76,7 @@
   <div id="screen-welcome" class="screen">
     <div class="card welcome-card">
       <div class="logo">🔢</div>
-      <h1>KS2 Unit Conversion Quiz</h1>
+      <h1>11+ Study App</h1>
       <p class="subtitle">
         Test your knowledge of <strong>Weight</strong>,
         <strong>Length</strong> &amp; <strong>Capacity</strong>!
@@ -343,6 +352,98 @@
 
     </div>
   </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!--  SCREEN 5 – Times Table Quiz                          -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div id="screen-times-table" class="screen">
+
+    <!-- Setup panel -->
+    <div id="tt-setup-panel">
+      <div class="card tt-card">
+        <div class="logo">✖️</div>
+        <h1>Times Tables</h1>
+        <p class="subtitle">Tables 13 – 30, up to ×12</p>
+
+        <p class="choose-label">Choose a Table:</p>
+        <div class="tt-table-grid" id="tt-table-grid">
+          <!-- populated by JS -->
+        </div>
+
+        <p class="choose-label">Questions per quiz:</p>
+        <div class="qcount-grid" id="tt-qcount-grid">
+          <button class="qcount-btn" data-count="5">5</button>
+          <button class="qcount-btn selected" data-count="10">10</button>
+          <button class="qcount-btn" data-count="15">15</button>
+          <button class="qcount-btn" data-count="20">20</button>
+        </div>
+
+        <button id="tt-start-btn" class="btn-primary" disabled>Start Quiz →</button>
+        <button id="tt-home-btn" class="btn-secondary">← Home</button>
+      </div>
+    </div>
+
+    <!-- Quiz panel -->
+    <div id="tt-quiz-panel" style="display:none">
+      <div class="quiz-top">
+        <header class="quiz-header">
+          <button id="tt-quit-btn" class="quiz-quit-btn">← Back</button>
+          <div class="hdr-left">
+            <span id="tt-hdr-score" class="hdr-score">Score: 0 / 10</span>
+          </div>
+          <div class="hdr-timer-wrap">
+            <span class="timer-label">Time</span>
+            <span id="tt-hdr-timer" class="hdr-timer">0:00</span>
+          </div>
+        </header>
+        <div class="progress-wrap">
+          <div class="progress-track">
+            <div id="tt-progress-fill" class="progress-fill" style="width:0%"></div>
+          </div>
+          <span id="tt-progress-label" class="progress-label">0 / 10</span>
+        </div>
+      </div>
+      <div class="card question-card">
+        <div id="tt-q-meta" class="q-meta"></div>
+        <div id="tt-q-text" class="q-text"></div>
+        <div id="tt-options-grid" class="options-grid"></div>
+        <div id="tt-feedback-box" class="feedback-box" hidden>
+          <p id="tt-feedback-msg" class="feedback-msg"></p>
+          <p id="tt-feedback-hint" class="feedback-hint"></p>
+          <button id="tt-next-btn" class="btn-primary">Next Question →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results panel -->
+    <div id="tt-results-panel" style="display:none">
+      <div class="card results-card">
+        <div class="result-header">
+          <div id="tt-result-emoji" class="result-emoji">🎉</div>
+          <h2>Quiz Complete!</h2>
+          <p id="tt-result-greeting" class="result-greeting"></p>
+        </div>
+        <div class="big-score-wrap">
+          <div id="tt-big-score" class="big-score"></div>
+          <div id="tt-grade-badge" class="grade-badge"></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-box">
+            <div id="tt-stat-time" class="stat-val">—</div>
+            <div class="stat-lbl">Total Time</div>
+          </div>
+          <div class="stat-box">
+            <div id="tt-stat-pct" class="stat-val">—</div>
+            <div class="stat-lbl">Score %</div>
+          </div>
+        </div>
+        <p id="tt-result-msg" class="result-msg"></p>
+        <button id="tt-play-again-btn" class="btn-primary">Play Again</button>
+        <button id="tt-home-from-results-btn" class="btn-secondary">← Home</button>
+      </div>
+    </div>
+
+  </div><!-- #screen-times-table -->
 
 </div><!-- #app -->
 <script src="quiz.js"></script>

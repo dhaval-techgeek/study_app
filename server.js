@@ -282,6 +282,6 @@ http
     });
   })
   .listen(PORT, () => {
-    log("info", "KS2 Unit Conversion Quiz – Web Edition");
+    log("info", "11+ Study App – Web Edition");
     log("info", `Listening on http://localhost:${PORT}`);
   });
